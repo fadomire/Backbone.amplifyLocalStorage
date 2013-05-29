@@ -42,7 +42,6 @@ Backbone.LocalStorage = window.Store = function(name) {
   if( !this.localStorage ) {
     throw "Backbone.localStorage: Environment does not support localStorage."
   }
-  console.log(this)
   this.name = name;
   var store = this.localStorage(this.name);
   this.records = (store && store.split(",")) || [];
