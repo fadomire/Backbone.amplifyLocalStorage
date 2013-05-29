@@ -42,8 +42,9 @@ Backbone.LocalStorage = window.Store = function(name) {
   if( !this.localStorage ) {
     throw "Backbone.localStorage: Environment does not support localStorage."
   }
+  console.log(this)
   this.name = name;
-  var store = this.localStorage().getItem(this.name);
+  var store = this.localStorage(this.name);
   this.records = (store && store.split(",")) || [];
 };
 
@@ -51,7 +52,7 @@ _.extend(Backbone.LocalStorage.prototype, {
 
   // Save the current state of the **Store** to *localStorage*.
   save: function() {
-    this.localStorage().setItem(this.name, this.records.join(","));
+    this.localStorage(this.name, this.records.join(","));
   },
 
   // Add a model, giving it a (hopefully)-unique GUID, if it doesn't already
@@ -61,7 +62,7 @@ _.extend(Backbone.LocalStorage.prototype, {
       model.id = guid();
       model.set(model.idAttribute, model.id);
     }
-    this.localStorage().setItem(this.name+"-"+model.id, JSON.stringify(model));
+    this.localStorage(this.name+"-"+model.id, JSON.stringify(model));
     this.records.push(model.id.toString());
     this.save();
     return this.find(model);
@@ -69,7 +70,7 @@ _.extend(Backbone.LocalStorage.prototype, {
 
   // Update a model by replacing its copy in `this.data`.
   update: function(model) {
-    this.localStorage().setItem(this.name+"-"+model.id, JSON.stringify(model));
+    this.localStorage(this.name+"-"+model.id, JSON.stringify(model));
     if (!_.include(this.records, model.id.toString()))
       this.records.push(model.id.toString()); this.save();
     return this.find(model);
@@ -77,7 +78,7 @@ _.extend(Backbone.LocalStorage.prototype, {
 
   // Retrieve a model from `this.data` by id.
   find: function(model) {
-    return this.jsonData(this.localStorage().getItem(this.name+"-"+model.id));
+    return this.jsonData(this.localStorage(this.name+"-"+model.id));
   },
 
   // Return the array of all models currently in storage.
@@ -85,7 +86,7 @@ _.extend(Backbone.LocalStorage.prototype, {
     // Lodash removed _#chain in v1.0.0-rc.1
     return (_.chain || _)(this.records)
       .map(function(id){
-        return this.jsonData(this.localStorage().getItem(this.name+"-"+id));
+        return this.jsonData(this.localStorage(this.name+"-"+id));
       }, this)
       .compact()
       .value();
@@ -95,7 +96,7 @@ _.extend(Backbone.LocalStorage.prototype, {
   destroy: function(model) {
     if (model.isNew())
       return false
-    this.localStorage().removeItem(this.name+"-"+model.id);
+    this.localStorage(this.name+"-"+model.id, null);
     this.records = _.reject(this.records, function(id){
       return id === model.id.toString();
     });
@@ -103,8 +104,8 @@ _.extend(Backbone.LocalStorage.prototype, {
     return model;
   },
 
-  localStorage: function() {
-    return localStorage;
+  localStorage: function(key, value, options) {
+    return amplify.store(key, value, options);
   },
 
   // fix for "illegal access" error on Android when JSON.parse is passed null
@@ -114,17 +115,17 @@ _.extend(Backbone.LocalStorage.prototype, {
 
   // Clear localStorage for specific collection.
   _clear: function() {
-    var local = this.localStorage(),
-      itemRe = new RegExp("^" + this.name + "-");
+    var local = this,
+        itemRe = new RegExp("^" + this.name + "-");
 
     // Remove id-tracking item (e.g., "foo").
-    local.removeItem(this.name);
+    local.localStorage(this.name, null);
 
     // Lodash removed _#chain in v1.0.0-rc.1
     // Match all data items (e.g., "foo-ID") and remove.
-    (_.chain || _)(local).keys()
+    (_.chain || _)(local.localStorage()).keys()
       .filter(function (k) { return itemRe.test(k); })
-      .each(function (k) { local.removeItem(k); });
+      .each(function (k) { local.localStorage(k, null); });
   },
 
   // Size of localStorage.

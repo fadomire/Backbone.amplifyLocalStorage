@@ -94,7 +94,6 @@ describe("Backbone.localStorage", function(){
           assert.equal(model.get("string"), "String 0");
         });
 
-
         describe("with a new `id`", function(){
 
           before(function(){
@@ -272,9 +271,8 @@ describe("Backbone.localStorage", function(){
     });
 
     describe("private browsing", function(){
-
       var model = new Model()
-        , oldSetItem = window.localStorage.setItem
+        , oldSetItem = amplify.store
         , oldStorageSize = model.localStorage._storageSize
         , error;
 
@@ -283,7 +281,7 @@ describe("Backbone.localStorage", function(){
 
         // Patch browser conditions for private error.
         model.localStorage._storageSize = function(){ return 0; };
-        window.localStorage.setItem = function(){
+        amplify.store = function(){
           var error = new Error();
           error.code = DOMException.QUOTA_EXCEEDED_ERR;
           throw error;
@@ -311,7 +309,7 @@ describe("Backbone.localStorage", function(){
       after(function(){
         // Unwrap patches.
         model.localStorage._storageSize = oldStorageSize;
-        window.localStorage.setItem = oldSetItem;
+        amplify.store = oldSetItem;
       })
 
     });
@@ -352,6 +350,7 @@ describe("AMD", function(){
       jquery: "support/jquery",
       underscore: "support/underscore",
       backbone: "support/backbone",
+      amplify: "support/amplify",
       localstorage: "../backbone.localStorage"
     }
   });
